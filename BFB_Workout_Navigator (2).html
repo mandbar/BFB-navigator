@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BFB Workout Navigator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f12;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --accent: #e85d26;
+    --accent2: #f0853d;
+    --text: #e8e8f0;
+    --muted: #8888a0;
+    --warmup: #2a3a2a;
+    --warmup-border: #4a7a3a;
+    --warmup-text: #88cc66;
+    --exercise: #1e2a3a;
+    --exercise-border: #2a4a7a;
+    --exercise-text: #6699dd;
+    --stretch: #2e2a3a;
+    --stretch-border: #6a4a7a;
+    --stretch-text: #aa88cc;
+    --day-rest: #1a1a1a;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: linear-gradient(135deg, #1a0a05 0%, #2a1008 50%, #1a0a05 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 1rem 1rem 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .header p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.15rem;
+  }
+
+  /* ─── PROGRAM TABS ─── */
+  .tab-bar {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding: 0.75rem 1rem 0;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex-shrink: 0;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ─── PROGRAM CONTENT ─── */
+  .program { display: none; padding: 0.75rem 1rem; }
+  .program.active { display: block; }
+
+  .program-intro {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 1rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ─── DAY CARDS ─── */
+  .day-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    background: var(--surface2);
+  }
+
+  .day-header:active { opacity: 0.85; }
+
+  .day-label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .day-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .day-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .day-subtitle {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 0.9rem;
+    transition: transform 0.2s;
+  }
+
+  .day-card.open .chevron { transform: rotate(180deg); }
+
+  .day-body { display: none; }
+  .day-card.open .day-body { display: block; }
+
+  /* ─── SECTIONS INSIDE DAY ─── */
+  .section-label {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.6rem 1rem 0.3rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  .section-label:first-child { border-top: none; }
+
+  /* ─── EXERCISE ROWS ─── */
+  .ex-row {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .ex-row:first-of-type { border-top: none; }
+
+  .ex-num {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 1.1rem;
+    text-align: right;
+  }
+
+  .ex-row .ex-num.alpha {
+    color: var(--warmup-text);
+    font-style: italic;
+  }
+
+  .ex-link {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--exercise-text);
+    text-decoration: none;
+    line-height: 1.3;
+  }
+
+  .ex-link.warmup { color: var(--warmup-text); }
+  .ex-link.stretch { color: var(--stretch-text); }
+  .ex-link.ais { color: var(--stretch-text); font-style: italic; }
+
+  .ex-link:active { opacity: 0.7; }
+
+  .ex-reps {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-align: right;
+    max-width: 5.5rem;
+    line-height: 1.3;
+  }
+
+  .page-tag {
+    font-size: 0.62rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* ─── REST DAY ─── */
+  .rest-note {
+    padding: 0.8rem 1rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ─── LEGEND ─── */
+  .legend {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0 1rem 0.75rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+  }
+
+  .legend-dot.warmup { background: var(--warmup-text); }
+  .legend-dot.exercise { background: var(--exercise-text); }
+  .legend-dot.stretch { background: var(--stretch-text); }
+
+  /* ─── PDF NOTE ─── */
+  .pdf-note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 0 1rem 1rem;
+    padding: 0.75rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .pdf-note strong { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Built From Broken</h1>
+  <p>Workout Navigator — tap exercise to jump to book page</p>
+</div>
+
+<!-- PROGRAM TABS -->
+<div class="tab-bar">
+  <div class="tab active" data-program="foundations">Foundations</div>
+  <div class="tab" data-program="beginner">Beginner</div>
+  <div class="tab" data-program="intermediate">Intermediate</div>
+  <div class="tab" data-program="advanced">Advanced</div>
+  <div class="tab" data-program="at-home">At-Home</div>
+  <div class="tab" data-program="travel">Travel</div>
+  <div class="tab" data-program="morning">Morning Mobility</div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend" style="margin-top:0.6rem;">
+  <div class="legend-item"><div class="legend-dot warmup"></div> Warm-Up</div>
+  <div class="legend-item"><div class="legend-dot exercise"></div> Main Exercise</div>
+  <div class="legend-item"><div class="legend-dot stretch"></div> AIS / Cool-Down</div>
+</div>
+
+<!-- PDF NOTE -->
+<div class="pdf-note">
+  <strong>How to use:</strong> Tap any exercise name. If your PDF viewer supports page anchors it will jump directly to that page. Otherwise note the page number shown and navigate manually. Store this file and the PDF in the same Dropbox folder.
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FOUNDATIONS  (5–7 days/week, same daily)
+════════════════════════════════════════════ -->
+<div id="program-foundations" class="program active">
+  <div class="program-intro">5–7 days/week · Same workout daily · Great for beginners building base strength &amp; stability. Book pages 484–485.</div>
+
+  <div class="day-card open" id="day-foundations-daily">
+    <div class="day-header">
+      <div class="day-label">
+        <div>
+          <div class="day-badge">Daily</div>
+        </div>
+        <div>
+          <div class="day-title">Full Body</div>
+          <div class="day-subtitle">Same every day</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge</a><span class="ex-reps">20 reps</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=324"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=324">Fire Hydrant</a><span class="ex-reps">20 each side</span><span class="page-tag">p324</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="ex-reps">20</span><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=334"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=334">Hinge to Squat</a><span class="ex-reps">20</span><span class="page-tag">p334</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=347"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">Band Pass Through</a><span class="ex-reps">20</span><span class="page-tag">p347</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=351"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=351">Modified Bully Stretch</a><span class="ex-reps">Hold 30 sec</span><span class="page-tag">p351</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=327"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=327">Pigeon Stretch</a><span class="ex-reps">30 sec each side</span><span class="page-tag">p327</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=366"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=366">Band Pull Apart</a><span class="ex-reps">1×20 (3-sec hold)</span><span class="page-tag">p366</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=386"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=386">Band Push-Up Plus (from knees)</a><span class="ex-reps">1×20 (3-sec hold)</span><span class="page-tag">p386</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=456"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=456">Standing Calf Raise (Bent Knee)</a><span class="ex-reps">1×20 (3-sec hold)</span><span class="page-tag">p456</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=441"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=441">Single Leg Romanian Deadlift (BW)</a><span class="ex-reps">1×20</span><span class="page-tag">p441</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=427"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=427">Dumbbell Goblet Squat</a><span class="ex-reps">1×20</span><span class="page-tag">p427</span></div>
+      <div class="ex-row"><span class="ex-num">6</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=252"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=252">Wall Sit</a><span class="ex-reps">1×30 sec</span><span class="page-tag">p252</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     BEGINNER  (2 days/week)
+════════════════════════════════════════════ -->
+<div id="program-beginner" class="program">
+  <div class="program-intro">2 days/week · Day 1 (Mon) + Day 4 (Thu) · Full body. Book pages 485–489.</div>
+
+  <!-- DAY 1 -->
+  <div class="day-card open" id="day-beginner-1">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 1</div></div>
+        <div>
+          <div class="day-title">Workout A — Full Body</div>
+          <div class="day-subtitle">Mon · Days 2–3: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=314"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">Supine Drawing In</a><span class="ex-reps">10 contractions</span><span class="page-tag">p314</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="ex-reps">20</span><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=362"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=362">Thoracic Extension on Foam Roller</a><span class="ex-reps">15</span><span class="page-tag">p362</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=352"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=352">Swimmer's Stretch</a><span class="ex-reps">15</span><span class="page-tag">p352</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge (with Hip Band)</a><span class="ex-reps">20 + 10-sec hold</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=366"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=366">Band Pull Apart</a><span class="ex-reps">25</span><span class="page-tag">p366</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=394"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=394">Bent Over Dumbbell Row</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p394</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=378"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=378">Incline Dumbbell Fly Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p378</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=434"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=434">Bulgarian Split Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p434</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=438"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=438">Dumbbell Romanian Deadlift (with Hip Band)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p438</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p317</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p317</span></div>
+    </div>
+  </div>
+
+  <!-- DAY 4 -->
+  <div class="day-card" id="day-beginner-4">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 4</div></div>
+        <div>
+          <div class="day-title">Workout B — Full Body</div>
+          <div class="day-subtitle">Thu · Days 5–7: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=334"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=334">Hinge to Squat</a><span class="ex-reps">15</span><span class="page-tag">p334</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge (with Groin Squeeze)</a><span class="ex-reps">20 + 10-sec hold</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=452"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=452">Ankle Glide</a><span class="ex-reps">20</span><span class="page-tag">p452</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Band Facepull</a><span class="ex-reps">25</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=352"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=352">Swimmer's Stretch</a><span class="ex-reps">15</span><span class="page-tag">p352</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=411"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=411">Forearm Tendon Glide</a><span class="ex-reps">20</span><span class="page-tag">p411</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=420"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=420">Box Stepdown</a><span class="ex-reps">W1: 3×10 · W2: 3×15 · W3: 3×10 · W4: 3×15</span><span class="page-tag">p420</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=427"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=427">Dumbbell Goblet Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p427</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=370"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=370">Seated Cable Facepull</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p370</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=375"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=375">Bottoms-Up Kettlebell Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p375</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=389"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=389">Single Arm Dumbbell Row (Strict, Knee on Bench)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p389</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p340</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     INTERMEDIATE  (3 days/week)
+════════════════════════════════════════════ -->
+<div id="program-intermediate" class="program">
+  <div class="program-intro">3 days/week · Days 1, 3, 5 · Lower / Upper / Full. Book pages 489–495.</div>
+
+  <!-- DAY 1 -->
+  <div class="day-card open" id="day-int-1">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 1</div></div>
+        <div>
+          <div class="day-title">Workout A — Lower Body</div>
+          <div class="day-subtitle">Low Back / Posterior Chain · Day 2: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=314"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">Supine Drawing In</a><span class="ex-reps">10 contractions</span><span class="page-tag">p314</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="ex-reps">20</span><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=315"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=315">Bird Dog</a><span class="ex-reps">20 each side</span><span class="page-tag">p315</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=324"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=324">Fire Hydrant</a><span class="ex-reps">25 each side</span><span class="page-tag">p324</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge (with Hip Band)</a><span class="ex-reps">20 + 10-sec hold</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=441"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=441">Single Leg Romanian Deadlift (BW)</a><span class="ex-reps">10 each side</span><span class="page-tag">p441</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=435"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=435">Cable Pull Through</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p435</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=434"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=434">Bulgarian Split Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p434</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=438"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=438">Dumbbell Romanian Deadlift</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p438</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p317</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=459"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=459">Single Leg Standing Calf Raise (Straight Knee)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×15 · W4: 3×15</span><span class="page-tag">p459</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p317</span></div>
+    </div>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="day-card" id="day-int-3">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 3</div></div>
+        <div>
+          <div class="day-title">Workout B — Upper Body</div>
+          <div class="day-subtitle">Horizontal Focus · Day 4: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="ex-reps">20</span><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=347"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">Band Pass Through</a><span class="ex-reps">15</span><span class="page-tag">p347</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=362"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=362">Thoracic Extension on Foam Roller</a><span class="ex-reps">15</span><span class="page-tag">p362</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">10-10-10</span><span class="page-tag">p340</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=352"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=352">Swimmer's Stretch</a><span class="ex-reps">15</span><span class="page-tag">p352</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=415"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=415">Dumbbell Pronation/Supination (Bent Elbows)</a><span class="ex-reps">20 each way</span><span class="page-tag">p415</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=366"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=366">Band Pull Apart</a><span class="ex-reps">25</span><span class="page-tag">p366</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=397"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=397">Suspension Trainer High Row (w/ Straight Arm Lowering)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p397</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=386"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=386">Band Push-Up Plus</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 2×5–7 · W4: 3×15</span><span class="page-tag">p386</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=397"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=397">Incline Dumbbell Row</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p397</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=378"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=378">Incline Dumbbell Fly Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p378</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=405"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=405">Alternating Dumbbell Curl</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p405</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p340</span></div>
+    </div>
+  </div>
+
+  <!-- DAY 5 -->
+  <div class="day-card" id="day-int-5">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 5</div></div>
+        <div>
+          <div class="day-title">Workout C — Full Body</div>
+          <div class="day-subtitle">Lower Anterior Chain &amp; Shoulder Stability · Days 6–7: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=334"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=334">Hinge to Squat</a><span class="ex-reps">15</span><span class="page-tag">p334</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge (with Groin Squeeze)</a><span class="ex-reps">20 + 10-sec hold</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=452"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=452">Ankle Glide</a><span class="ex-reps">20</span><span class="page-tag">p452</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=366"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=366">Band Pull Apart</a><span class="ex-reps">25</span><span class="page-tag">p366</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=352"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=352">Swimmer's Stretch</a><span class="ex-reps">15</span><span class="page-tag">p352</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=411"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=411">Forearm Tendon Glide</a><span class="ex-reps">20</span><span class="page-tag">p411</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=420"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=420">Box Stepdown</a><span class="ex-reps">W1: 3×10 · W2: 3×15 · W3: 3×10 · W4: 3×15</span><span class="page-tag">p420</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=427"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=427">Dumbbell Goblet Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p427</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=370"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=370">Seated Cable Facepull</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p370</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=375"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=375">Bottoms-Up Kettlebell Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p375</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=393"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=393">Single Arm Dumbbell Row (Staggered Stance)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p393</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=327"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=327">Pigeon Stretch</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p327</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ADVANCED  (4 days/week)
+════════════════════════════════════════════ -->
+<div id="program-advanced" class="program">
+  <div class="program-intro">4 days/week · Days 1, 2, 4, 5 · Lower / Upper / Lower / Upper. Book pages 495–502.</div>
+
+  <!-- DAY 1 -->
+  <div class="day-card open" id="day-adv-1">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 1</div></div>
+        <div>
+          <div class="day-title">Workout A — Lower Body</div>
+          <div class="day-subtitle">Low Back / Posterior Chain · Day 3: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=314"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">Supine Drawing In</a><span class="ex-reps">10 contractions</span><span class="page-tag">p314</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="ex-reps">20</span><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=315"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=315">Bird Dog</a><span class="ex-reps">20 each side</span><span class="page-tag">p315</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=324"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=324">Fire Hydrant</a><span class="ex-reps">25 each side</span><span class="page-tag">p324</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge (with Hip Band)</a><span class="ex-reps">20 + 10-sec hold</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=441"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=441">Single Leg RDL (BW)</a><span class="ex-reps">10 each side</span><span class="page-tag">p441</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=435"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=435">Cable Pull Through</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p435</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=434"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=434">Bulgarian Split Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p434</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=438"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=438">Dumbbell Romanian Deadlift</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p438</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p317</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=459"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=459">Single Leg Standing Calf Raise (Straight Knee)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×15 · W4: 3×15</span><span class="page-tag">p459</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p317</span></div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-card" id="day-adv-2">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 2</div></div>
+        <div>
+          <div class="day-title">Workout B — Upper Body</div>
+          <div class="day-subtitle">Horizontal Focus · Day 3: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=347"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">Band Pass Through</a><span class="ex-reps">15</span><span class="page-tag">p347</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=362"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=362">Thoracic Extension on Foam Roller</a><span class="ex-reps">15</span><span class="page-tag">p362</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">10-10-10</span><span class="page-tag">p340</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=352"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=352">Swimmer's Stretch</a><span class="ex-reps">15</span><span class="page-tag">p352</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=415"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=415">Dumbbell Pronation/Supination (Bent Elbows)</a><span class="ex-reps">20 each way</span><span class="page-tag">p415</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Band Facepull</a><span class="ex-reps">25</span><span class="page-tag">p373</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=397"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=397">Suspension Trainer High Row (w/ Straight Arm Lowering)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p397</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=386"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=386">Band Push-Up Plus</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 2×5–7 · W4: 3×15</span><span class="page-tag">p386</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=380"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=380">Incline Dumbbell High Row</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p380</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=378"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=378">Incline Dumbbell Fly Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p378</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=405"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=405">Alternating Dumbbell Curl</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p405</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p340</span></div>
+    </div>
+  </div>
+
+  <!-- DAY 4 -->
+  <div class="day-card" id="day-adv-4">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 4</div></div>
+        <div>
+          <div class="day-title">Workout C — Lower Body</div>
+          <div class="day-subtitle">Knee / Anterior Chain Focus</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=314"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">Supine Drawing In</a><span class="ex-reps">10 contractions</span><span class="page-tag">p314</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="ex-reps">20</span><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="ex-reps">10 rotations each side</span><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=315"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=315">Bird Dog</a><span class="ex-reps">20 each side</span><span class="page-tag">p315</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=334"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=334">Hinge to Squat</a><span class="ex-reps">15</span><span class="page-tag">p334</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge (with Groin Squeeze)</a><span class="ex-reps">20 + 10-sec hold</span><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=452"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=452">Ankle Glide</a><span class="ex-reps">20</span><span class="page-tag">p452</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=420"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=420">Box Stepdown</a><span class="ex-reps">W1: 3×10 · W2: 3×15 · W3: 3×10 · W4: 3×15</span><span class="page-tag">p420</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=313"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=313">Spanish Squat</a><span class="ex-reps">W1: 2×10 · W2: 3×8–12 · W3: 3×15 · W4: 3×20</span><span class="page-tag">p313</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=442"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=442">Swiss Ball Leg Curl</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 3×10 · W4: 3×20</span><span class="page-tag">p442</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=430"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=430">Dumbbell Front Squat, Heels Elevated</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p430</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=459"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=459">Single Leg Standing Calf Raise (Bent Knee, from Block)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×15 · W4: 3×15</span><span class="page-tag">p459</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=327"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=327">Pigeon Stretch</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p327</span></div>
+    </div>
+  </div>
+
+  <!-- DAY 5 -->
+  <div class="day-card" id="day-adv-5">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 5</div></div>
+        <div>
+          <div class="day-title">Workout D — Upper Body</div>
+          <div class="day-subtitle">Shoulder Stability Focus · Days 6–7: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=347"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">Band Pass Through</a><span class="ex-reps">15</span><span class="page-tag">p347</span></div>
+      <div class="ex-row"><span class="ex-num alpha">b</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=362"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=362">Thoracic Extension on Foam Roller</a><span class="ex-reps">15</span><span class="page-tag">p362</span></div>
+      <div class="ex-row"><span class="ex-num alpha">c</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">10-10-10</span><span class="page-tag">p340</span></div>
+      <div class="ex-row"><span class="ex-num alpha">d</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=352"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=352">Swimmer's Stretch</a><span class="ex-reps">15</span><span class="page-tag">p352</span></div>
+      <div class="ex-row"><span class="ex-num alpha">e</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=411"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=411">Forearm Tendon Glide</a><span class="ex-reps">25</span><span class="page-tag">p411</span></div>
+      <div class="ex-row"><span class="ex-num alpha">f</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=366"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=366">Band Pull Apart</a><span class="ex-reps">25</span><span class="page-tag">p366</span></div>
+      <div class="ex-row"><span class="ex-num alpha">g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=342"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=342">Scapular Pull-Up</a><span class="ex-reps">15</span><span class="page-tag">p342</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=370"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=370">Seated Cable Facepull</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p370</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Scapular Plane Dumbbell Raise</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=389"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=389">Single Arm Dumbbell Row (Strict, Split Stance)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p389</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=375"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=375">Bottoms-Up Kettlebell Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p375</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=401"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=401">Reverse Grip Cable Pulldown</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p401</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=342"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=342">Scapular Pull-Up</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p342</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     AT-HOME  (4 days/week, minimalist)
+════════════════════════════════════════════ -->
+<div id="program-at-home" class="program">
+  <div class="program-intro">4 days/week · Kettlebell + bands only · Same structure as Advanced. Book pages 519–527.</div>
+
+  <div class="day-card open" id="day-home-1">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 1</div></div>
+        <div>
+          <div class="day-title">Workout A — Lower Body</div>
+          <div class="day-subtitle">Low Back / Posterior Chain</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up (same as Advanced Day 1)</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=496"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">See Advanced Day 1 warm-up</a><span class="ex-reps">p314–441</span><span class="page-tag">p496</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=437"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=437">Band Pull Through</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p437</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=435"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=435">Contralateral Bulgarian Split Squat (with KB)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p435</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=438"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=438">Kettlebell Romanian Deadlift (with Hip Band)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p438</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Kettlebell Cossack Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p317</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=459"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=459">Single Leg Standing Calf Raise (Straight Knee, from Block)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p459</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p317</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-home-2">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 2</div></div>
+        <div>
+          <div class="day-title">Workout B — Upper Body</div>
+          <div class="day-subtitle">Horizontal Focus</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up (same as Advanced Day 2)</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=522"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">See Advanced Day 2 warm-up</a><span class="ex-reps">p337–373</span><span class="page-tag">p522</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Band Facepull</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=386"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=386">Band Push-Up Plus</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 2×5–7 · W4: 3×15</span><span class="page-tag">p386</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=389"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=389">Single Arm Kettlebell Row (Strict, Split Stance)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p389</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=418"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=418">Standing Kettlebell Pullover</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p418</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=410"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=410">Dumbbell Zottman Curl</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p410</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p340</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-home-4">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 4</div></div>
+        <div>
+          <div class="day-title">Workout C — Lower Body</div>
+          <div class="day-subtitle">Knee / Anterior Chain</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up (same as Advanced Day 4)</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=524"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">See Advanced Day 4 warm-up</a><span class="ex-reps">p314–452</span><span class="page-tag">p524</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=420"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=420">Box Stepdown</a><span class="ex-reps">W1: 3×10 · W2: 3×15 · W3: 3×10 · W4: 3×15</span><span class="page-tag">p420</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=313"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=313">Spanish Squat</a><span class="ex-reps">W1: 2×10 · W2: 3×8–12 · W3: 3×15 · W4: 3×20</span><span class="page-tag">p313</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=441"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=441">Single Leg RDL (with Dumbbells)</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 3×10 · W4: 3×20</span><span class="page-tag">p441</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=428"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=428">Kettlebell Goblet Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p428</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=459"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=459">Single Leg Standing Calf Raise (Bent Knee)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×15 · W4: 3×15</span><span class="page-tag">p459</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=327"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=327">Pigeon Stretch</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p327</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-home-5">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 5</div></div>
+        <div>
+          <div class="day-title">Workout D — Upper Body</div>
+          <div class="day-subtitle">Shoulder Stability</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up (same as Advanced Day 5)</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=526"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">See Advanced Day 5 warm-up</a><span class="ex-reps">p347–342</span><span class="page-tag">p526</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=368"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=368">Anchored Band Pull Apart</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p368</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=441"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=441">Single Leg RDL (with Dumbbells)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p441</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=389"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=389">Single Arm Kettlebell Row (Staggered Stance)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p389</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=375"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=375">Bottoms-Up Kettlebell Press</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p375</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=418"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=418">Dumbbell Pronation/Supination (Straight Arms)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p418</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=342"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=342">Scapular Pull-Up</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p342</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TRAVEL  (4 days/week, bands only)
+════════════════════════════════════════════ -->
+<div id="program-travel" class="program">
+  <div class="program-intro">4 days/week · Bands + bodyweight only · Days 1, 2, 4, 5. Book pages 527–535.</div>
+
+  <div class="day-card open" id="day-travel-1">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 1</div></div>
+        <div>
+          <div class="day-title">Workout A — Lower Body</div>
+          <div class="day-subtitle">Low Back / Posterior Chain</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=528"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">Same as Advanced Day 1 warm-up</a><span class="ex-reps">p314–441</span><span class="page-tag">p528</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=437"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=437">Band Pull Through</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p437</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=434"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=434">Bulgarian Split Squat (BW)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p434</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=438"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=438">Romanian Deadlift (with Hip Band)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p438</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p317</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=456"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=456">Single Leg Calf Raise (Straight Knee, from Block)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p456</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p317</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-travel-2">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 2</div></div>
+        <div>
+          <div class="day-title">Workout B — Upper Body</div>
+          <div class="day-subtitle">Horizontal Focus · Day 3: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=530"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">Same as Advanced Day 2 warm-up</a><span class="ex-reps">p337–373</span><span class="page-tag">p530</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Band Facepull</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=386"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=386">Band Push-Up Plus</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 2×5–7 · W4: 3×15</span><span class="page-tag">p386</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=368"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=368">Anchored Band Pull Apart</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p368</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Scapular Plane Band Raise</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=410"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=410">Band Zottman Curl</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p410</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=340"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=340">Anchored Lat Stretch</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p340</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-travel-4">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 4</div></div>
+        <div>
+          <div class="day-title">Workout C — Lower Body</div>
+          <div class="day-subtitle">Knee / Anterior Chain</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=532"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=314">Same as Advanced Day 4 warm-up</a><span class="ex-reps">p314–452</span><span class="page-tag">p532</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=420"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=420">Box Stepdown</a><span class="ex-reps">W1: 3×10 · W2: 3×15 · W3: 3×10 · W4: 3×15</span><span class="page-tag">p420</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=313"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=313">Spanish Squat</a><span class="ex-reps">W1: 2×10 · W2: 3×8–12 · W3: 3×15 · W4: 3×20</span><span class="page-tag">p313</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=441"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=441">Single Leg RDL (BW)</a><span class="ex-reps">W1: 2×5–7 · W2: 3×8–12 · W3: 3×10 · W4: 3×20</span><span class="page-tag">p441</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=434"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=434">Bulgarian Split Squat (BW)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p434</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=459"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=459">Single Leg Calf Raise (Bent Knee, from Block)</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×15 · W4: 3×15</span><span class="page-tag">p459</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=327"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=327">Pigeon Stretch</a><span class="ex-reps">2×10 each side (2-sec hold)</span><span class="page-tag">p327</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-travel-5">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Day 5</div></div>
+        <div>
+          <div class="day-title">Workout D — Upper Body</div>
+          <div class="day-subtitle">Shoulder Stability · Days 6–7: Rest</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="section-label">🔥 Dynamic Warm-Up</div>
+      <div class="ex-row"><span class="ex-num alpha">a–g</span><a class="ex-link warmup" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=534"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">Same as Advanced Day 5 warm-up</a><span class="ex-reps">p347–342</span><span class="page-tag">p534</span></div>
+
+      <div class="section-label">💪 Main Exercises</div>
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=368"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=368">Anchored Band Pull Apart</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p368</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Scapular Plane Band Raise</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=373"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=373">Band Facepull</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p373</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=410"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=410">Band Zottman Curl</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p410</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=386"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=386">Band Push-Up Plus</a><span class="ex-reps">W1: 2×7 · W2: 3×8–12 · W3: 3×5–7 · W4: 3×15</span><span class="page-tag">p386</span></div>
+
+      <div class="section-label">🧘 AIS Cool-Down</div>
+      <div class="ex-row"><span class="ex-num alpha">—</span><a class="ex-link ais" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=342"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=342">Scapular Pull-Up</a><span class="ex-reps">2×10 (2-sec hold)</span><span class="page-tag">p342</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MORNING MOBILITY
+════════════════════════════════════════════ -->
+<div id="program-morning" class="program">
+  <div class="program-intro">Daily · 1 set of each · 5 slow reps + 5-sec hold at end position. Book pages 535–541.</div>
+
+  <div class="day-card open" id="day-morning-bw">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Part 1</div></div>
+        <div>
+          <div class="day-title">Body-Weight Mobility Sequence</div>
+          <div class="day-subtitle">5 reps each + 5-sec hold at end position</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=330"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=330">Cat-Cow</a><span class="page-tag">p330</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=337"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=337">World's Greatest Stretch</a><span class="page-tag">p337</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=321"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=321">Glute Bridge</a><span class="page-tag">p321</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=334"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=334">Hinge to Squat</a><span class="page-tag">p334</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=317"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=317">Cossack Squat</a><span class="page-tag">p317</span></div>
+      <div class="ex-row"><span class="ex-num">6</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=347"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=347">Band Pass Through</a><span class="page-tag">p347</span></div>
+    </div>
+  </div>
+
+  <div class="day-card" id="day-morning-w">
+    <div class="day-header">
+      <div class="day-label">
+        <div><div class="day-badge">Part 2</div></div>
+        <div>
+          <div class="day-title">Weighted Mobility Sequence</div>
+          <div class="day-subtitle">10 reps each · 1–2 sec up, 1–2 sec down</div>
+        </div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="day-body">
+      <div class="ex-row"><span class="ex-num">1</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=410"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=410">Dumbbell Zottman Curl</a><span class="page-tag">p410</span></div>
+      <div class="ex-row"><span class="ex-num">2</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=418"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=418">Standing Dumbbell Pullover</a><span class="page-tag">p418</span></div>
+      <div class="ex-row"><span class="ex-num">3</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=394"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=394">Bent Over Dumbbell Row</a><span class="page-tag">p394</span></div>
+      <div class="ex-row"><span class="ex-num">4</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=438"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=438">Dumbbell Romanian Deadlift</a><span class="page-tag">p438</span></div>
+      <div class="ex-row"><span class="ex-num">5</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=427"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=427">Dumbbell Goblet Squat</a><span class="page-tag">p427</span></div>
+      <div class="ex-row"><span class="ex-num">6</span><a class="ex-link" href="https://dl.dropboxusercontent.com/scl/fi/s4kse33zzq4afcm3ylvfh/Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf?rlkey=4h7h7b48aiw3gw8zdd3z227zf&st=vtm484og#page=415"Built_From_Broken_Revised_n_Expanded_Edition_-_Scott_Hogan.pdf#page=st=vtm484og#page=415">Dumbbell Pronation/Supination</a><span class="page-tag">p415</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var id = tab.getAttribute('data-program');
+      document.querySelectorAll('.program').forEach(function(p) { p.classList.remove('active'); });
+      document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+      var prog = document.getElementById('program-' + id);
+      if (prog) prog.classList.add('active');
+      tab.classList.add('active');
+      window.scrollTo(0, 0);
+    });
+  });
+
+  document.querySelectorAll('.day-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+      header.parentElement.classList.toggle('open');
+    });
+  });
+});
+</script>
+</body>
+</html>
